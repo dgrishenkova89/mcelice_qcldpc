@@ -58,9 +58,9 @@ class LDPC():
         return error
 
     def fill_nodes(self):
-        self.check_nodes = [(i, 'c%d' % i)
+        self.check_nodes = [(i, '%d' % i)
                             for i in range(len(self.H_base))]
-        self.variable_nodes = [(i, 'v%d' % i)
+        self.variable_nodes = [(i, '%d' % i)
                                for i in range(len(self.H_base[0]))]
 
         self.check_adjacencies = defaultdict(list)
