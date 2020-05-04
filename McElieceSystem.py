@@ -33,6 +33,7 @@ class McElieceSystem:
         return vector + self.error
 
     def decode(self, code):
-        #vector = np.matmul(np.array(code), self.Q_matrix)
-        message = self.LDPC.decode_by_gallager(code)
+        x_ = np.matmul(np.array(code), self.Q_matrix)
+        u_ = self.LDPC.decode_by_gallager(x_)
+        message = np.matmul(np.array(u_), self.S_matrix)
         return message
