@@ -1,0 +1,5 @@
+generator-matrix: G_Matrix.txt
+parity-check-matrix: H_Matrix.txt
+public-key: Public_Key.txt
+private-key: Private_Key.txt
+encode-message: Encode_Message.txt
