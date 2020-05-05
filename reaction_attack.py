@@ -36,7 +36,7 @@ def get_spectrum(vector, length):
 
 
 def get_code_spectrum(code):
-    r = code.length / 2
+    r = code.length // 2
     h0 = code.check_matrix[0][:r]
 
     return get_spectrum(h0, code.length)

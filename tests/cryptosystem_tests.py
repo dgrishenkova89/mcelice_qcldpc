@@ -66,9 +66,6 @@ class QcldpcTests(unittest.TestCase):
     #        print("Can't write file {0}".format(Exception))
 
     def test_decode(self):
-        config = yaml.safe_load(open('config.yml'))
-        remove_files(config)
-
         ldpc = QC_LDPC.LDPC(self.n0, self.r, self.w, self.t, self.m, 0.2)
 
         cryptosystem = MC.McElieceSystem(ldpc)
@@ -84,9 +81,12 @@ class QcldpcTests(unittest.TestCase):
         assert cryptosystem.message.all(message)
 
         try:
+            config = yaml.safe_load(open('config.yml'))
+            remove_files(config)
             print_files(config, "generator-matrix", ldpc.G_matrix)
             print_files(config, "parity-check-matrix", ldpc.H_matrix)
             print_files(config, "public-key", ldpc.public_key[0])
             print_files(config, "private-key", cryptosystem.private_key)
+            config.clear()
         except Exception:
             print("Can't write file {0}".format(Exception))
