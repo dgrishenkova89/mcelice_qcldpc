@@ -28,23 +28,26 @@ class LDPC():
         self.R = (self.n0 - 1) / self.n0
         self.error_prob = error_prob
 
-        self.H_matrix, self.G_matrix = self.get_generator_matrix(self.r, self.w)
-        print("Generate parity check matrix")
-
         self.message = self.gen_random_message()
-        self.error = gen_random_vector_with_fixed_weight(self.n, (self.t // self.m))
+        self.error = gen_random_vector_with_fixed_weight(self.n, self.t // self.m)
 
         try:
-            vector_q = gen_random_vector_with_fixed_weight(self.n, self.m)
+            self.H_matrix, self.G_matrix = self.get_generator_matrix(self.r, self.w)
+            print("Generate parity check matrix")
+
+            vector_q = gen_random_vector_with_fixed_weight(self.n, self.m // 2)
             self.Q_matrix = self.gen_cyclic_matrix(vector_q)
             Q_inv = np.linalg.inv(self.Q_matrix).astype(int)
             print("Inverse Q")
+
             vector_s = gen_random_vector_with_fixed_weight(self.r, self.m)
             self.S_matrix = self.gen_cyclic_matrix(vector_s)
-            S_inv = np.linalg.inv(self.S_matrix).astype(int)
+            self.S_inv = np.linalg.inv(self.S_matrix).astype(int)
             print("Inverse S")
-            s_g = np.matmul(S_inv, self.G_matrix)
+
+            s_g = np.matmul(self.S_inv, self.G_matrix)
             print("Multiply S_inv and G")
+
             self.public_key = np.matmul(s_g, Q_inv)
             print("Multiply S_G and Q")
         except Exception:

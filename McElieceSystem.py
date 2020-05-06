@@ -20,21 +20,15 @@ class McElieceSystem:
 
     def __init__(self, LDPC):
         self.LDPC = LDPC
-        self.error_vector = LDPC.error
-        self.private_key = LDPC.H_matrix
-        self.public_key = LDPC.public_key
-        self.Q_matrix = LDPC.Q_matrix
-        self.S_matrix = LDPC.S_matrix
-        self.message = LDPC.message
-        self.error = LDPC.error
 
     def encode(self):
-        vector = np.array((np.matmul(np.array(self.message), self.public_key) + self.error) % 2)
+        vector = np.array((np.matmul(np.array(self.LDPC.message), self.LDPC.public_key) + self.LDPC.error) % 2)
         print("Encode")
         return vector
 
     def decode(self, code):
-        x_ = np.array(np.matmul(np.array(code), self.Q_matrix) % 2)
+        x_ = np.array(np.matmul(np.array(code), self.LDPC.Q_matrix) % 2)
         u_ = self.LDPC.decode_by_gallager(x_)
-        message = np.matmul(u_, self.S_matrix)
+        size = len(u_) // 2
+        message = (np.matmul(u_[size:], self.LDPC.S_inv) + np.matmul(u_[:size], self.LDPC.S_inv)) % 2
         return message

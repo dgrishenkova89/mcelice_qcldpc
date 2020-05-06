@@ -7,9 +7,9 @@ from fileutils import print_files, remove_files
 
 class QcldpcTests(unittest.TestCase):
     n0 = 2
-    r = 4801
+    r = 500
     w = 90
-    m = 30
+    m = 7
     t = 84
 
     def test_random_vector_with_fixed_wight(self):
