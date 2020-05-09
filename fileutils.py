@@ -1,5 +1,6 @@
 import os
 
+
 def remove_files(config):
     if os.path.isfile(config['generator-matrix']):
         os.remove(config['generator-matrix'])
@@ -13,11 +14,17 @@ def remove_files(config):
         os.remove(config['private-key'])
 
 
-def print_files(config, filename, matrix):
+def write_matrix_in_files(config, filename, matrix):
     with open(config[filename], 'a') as file:
         for item in matrix:
             for j in item:
                 file.write('{0}'.format(j))
             file.write('\n')
 
+        file.close()
+
+
+def write_list_in_file(config, filename, list):
+    with open(config[filename], 'a') as file:
+        file.write('{0}\n'.format(list))
         file.close()

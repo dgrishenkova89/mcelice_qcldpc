@@ -1,0 +1,4 @@
+{
+  "cryptosystem_tests.py": true,
+  "cryptosystem_tests.py::QcldpcTests::test_decode": true
+}

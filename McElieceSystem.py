@@ -1,20 +1,6 @@
 import numpy as np
-
-
-#def rotate_blocks(vector, i):
-#    h0 = list(vector[:len(vector) // 2])
-#    h1 = list(vector[len(vector) // 2:])
-#    h = h0[-i:] + h0[:-i] + h1[-i:] + h1[:-i]
-#    return np.array(h)
-
-
-#def get_syndrom_for_code(code, c):
-#    syndrom = []
-#    for i in range(len(c) // 2):
-#        calculate_syndrom_val = (c + rotate_blocks(c, i)) * code.check_matrix.transpose()
-#        syndrom.append(len([i for i in calculate_syndrom_val if i == 1]))
-#    return syndrom
-
+import random
+from mcelice_qcldpc.qcldpc import get_hamming_weight, gen_random_vector_with_fixed_weight
 
 class McElieceSystem:
 
@@ -22,13 +8,28 @@ class McElieceSystem:
         self.LDPC = LDPC
 
     def encode(self):
-        vector = np.array((np.matmul(np.array(self.LDPC.message), self.LDPC.public_key) + self.LDPC.error) % 2)
-        print("Encode")
-        return vector
+        print("Start encoding")
+        self.message = self.gen_random_message()
+
+        error_vector = gen_random_vector_with_fixed_weight(self.LDPC.n, self.LDPC.t // self.LDPC.m)
+        code = np.array((np.matmul(self.message, self.LDPC.public_key) + error_vector) % 2)
+        print("Finish encoding")
+        return code
 
     def decode(self, code):
-        x_ = np.array(np.matmul(np.array(code), self.LDPC.Q_matrix) % 2)
-        u_ = self.LDPC.decode_by_gallager(x_)
-        size = len(u_) // 2
-        message = (np.matmul(u_[size:], self.LDPC.S_inv) + np.matmul(u_[:size], self.LDPC.S_inv)) % 2
+        print("Start decoding")
+        message = self.LDPC.decode_by_gallager(code)
+
+        weight_source_message = get_hamming_weight(self.message)
+        weight_decode_message = get_hamming_weight(message)
+        print("Source message weight: {0}".format(weight_source_message))
+        print("Decoded message weight: {0}".format(weight_decode_message))
+        print("A Weight of source and decoded message is equals: {0}".format(weight_decode_message == weight_source_message))
+
+        print("Finish decoding")
         return message
+
+    def gen_random_message(self):
+        message = np.array([random.choice([0, 1])
+                            for i in range(self.LDPC.r)])
+        return np.array(message)
