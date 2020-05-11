@@ -12,17 +12,16 @@ class reaction_attack_tests(unittest.TestCase):
 
     def test_attack(self):
         cryptosystem = MC.McElieceSystem(self.n0, self.r, self.w, self.m, self.t)
-        source_cipher = cryptosystem.encode()
-        source_message = cryptosystem.message
-        source_private_key = cryptosystem.LDPC.H_matrix[0]
 
         h = []
+        cipher_text_list = []
         for i in range(1000):
             initialization = ra.reaction_attack(self.n0, self.r, cryptosystem)
-            success, h1 = initialization.key_recovery(1000)
+            success, h1, cipher_text = initialization.key_recovery()
             if success:
                 h.append(h1)
+                cipher_text_list.append(cipher_text)
 
-        assert len(h1) != 0
+        assert len(h) != 0
 
         print("test_random_vector_with_fixed_wight")

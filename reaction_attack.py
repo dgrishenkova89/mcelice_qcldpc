@@ -28,22 +28,28 @@ class reaction_attack:
         self.r = r
         self.n = self.r * self.n0
         self.mc_system = mc_system
+        self.source_cipher = mc_system.encode()
+        self.source_message = mc_system.message
+        self.source_error_vector = mc_system.error_vector
 
     def key_recovery(self):
         size = self.r // 2
         w = choice(range(size // 2))
         m = choice(range(50))
         t = choice(range(size // 2))
-        p0, p1, B = self.spectrum_recovery(w, m, t)
+        p0, p1, B, cipher_text = self.spectrum_recovery(w, m, t)
 
-        s0 = get_spectrum_dist(B[:, 0:self.r])
-        s1 = get_spectrum_dist(B[:, self.r:(self.r * 2)])
+        s0 = get_spectrum_dist(B[0][0:self.r])
+        s1 = get_spectrum_dist(B[0][self.r:(self.r * 2)])
+
+        if len(s0) == 0 or list(s1) == 0:
+            return False, None, cipher_text
 
         list_out_s0 = [i for i in range(1, self.r // 2 + 1) if i not in s0]
         list_out_s1 = [i for i in range(1, self.r // 2 + 1) if i not in s1]
 
         if len(list_out_s0) == 0 or list(list_out_s1) == 0:
-            return False, None
+            return False, None, cipher_text
 
         shuffle(list_out_s0)
         shuffle(list_out_s1)
@@ -56,8 +62,8 @@ class reaction_attack:
 
         h1_rec = self.restore_message_by_spectrum(out_s0, out_s1, d0, d1, B, w)
 
-        if h1_rec != -1:
-            return True, h1_rec
+        if h1_rec is not None:
+            return True, h1_rec, cipher_text
 
 
     def restore_message_by_spectrum(self, out_s0, out_s1, d0, d1, B, weight):
@@ -76,7 +82,7 @@ class reaction_attack:
             w = get_hamming_weight(B_Z1[one_pos])
             if w <= weight:
                 return B_Z1[one_pos]
-        return -1
+        return None
 
     def spectrum_recovery(self, w, m, t):
         crypto = mc.McElieceSystem(self.n0, self.r, w, m, t)
@@ -95,4 +101,4 @@ class reaction_attack:
         p0 = [(a0[i] / b0[i]) for i in range(len(a0))]
         p1 = [(a1[i] / b1[i]) for i in range(len(a1))]
 
-        return p0, p1, crypto.LDPC.H_matrix
+        return p0, p1, crypto.LDPC.H_matrix, cipher_text
