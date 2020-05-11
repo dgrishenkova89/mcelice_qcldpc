@@ -28,15 +28,11 @@ class LDPC():
         self.Q_matrix, Q_inv = self.gen_Q_matrix()
 
         self.H_matrix, self.G_matrix = self.get_generator_matrix()
-        print("Generate parity check matrix")
+        print("Generate parity check and generator matrices")
 
-        result = (np.matmul(self.H_matrix, self.G_matrix.transpose()) % 2).astype(int)
-        if 1 in result:
-            raise ValueError("Multiply H and G_transpose not equals 0")
+        self.S_matrix, self.S_inv = self.gen_S_matrix()
 
-        self.S_matrix, S_inv = self.gen_S_matrix()
-
-        s_g = (np.matmul(S_inv, self.G_matrix) % 2).astype(int)
+        s_g = (np.matmul(self.S_inv, self.G_matrix) % 2).astype(int)
         print("Multiply S_inv and G")
 
         self.public_key = (np.matmul(s_g, Q_inv) % 2).astype(int)
@@ -45,87 +41,103 @@ class LDPC():
         print('ok')
 
     def get_generator_matrix(self):
-        H0, H1, H_base = self.gen_qc_cyclic_matrix()
-        H1_inv = (np.linalg.inv(H1) % 2).astype(int)
-        H = (np.matmul(H1_inv, H0).transpose() % 2).astype(int)
-        I = gen_identity_matrix(self.r)
-
-        return H_base, np.concatenate((I, H), axis=1)
+        while 1 == 1:
+            H0, H1, H_base = gen_qc_cyclic_matrix(self.r, self.w)
+            try:
+                H1_inv = (np.linalg.inv(H1) % 2).astype(int)
+                H = (np.matmul(H1_inv, H0).transpose() % 2).astype(int)
+                I = gen_identity_matrix(self.r)
+                return H_base, np.concatenate((I, H), axis=1)
+            except:
+                print("Matrix H is singular")
 
     def gen_Q_matrix(self):
-        vector_1 = gen_random_vector_with_fixed_weight(self.n, self.m)
-        Q_matrix = self.gen_cyclic_matrix(vector=vector_1)
-        Q_inv = (np.linalg.inv(Q_matrix) % 2).astype(int)
-        print("\nInverse Q")
+        while 1 == 1:
+            vector_1 = list(np.random.permutation(gen_random_vector_with_fixed_weight(self.n, self.m)))
+#            perm_mat = np.zeros((self.n, self.n))
+#            for i in range(self.n):
+#                perm_mat[:, i] = np.random.permutation(vector_1)
+            Q_matrix = gen_cyclic_matrix(vector_1)
 
-        return Q_matrix, Q_inv
+            try:
+                Q_inv = (np.linalg.inv(Q_matrix) % 2).astype(int)
+                print("\nInverse Q")
+                return Q_matrix, Q_inv
+            except:
+                print("\nMatrix Q is singular")
 
     def gen_S_matrix(self):
-        S_matrix = gen_scrambling_matrix(self.r)
-        S_inv = np.linalg.inv(S_matrix).astype(int)
-        print("Inverse S")
+        while 1 == 1:
+            vector_1 = list(np.random.permutation(gen_random_vector_with_fixed_weight(self.r, 1)))
+            try:
+                #S_matrix = gen_scrambling_matrix(self.r)
+                S_matrix = gen_cyclic_matrix(vector_1)
+                S_inv = np.linalg.inv(S_matrix).astype(int)
+                print("Inverse S")
 
-        return S_matrix, S_inv
+                return S_matrix, S_inv
+            except:
+                print("\nMatrix Q is singular")
 
-    def gen_cyclic_matrix(self, vector, row_count=None):
-        block_size = len(vector)
-        if row_count is not None:
-            block_size = row_count
-        check_matrix = [[] for _ in range(block_size)]
-        for i, _ in enumerate(check_matrix):
-            if row_count is not None and i == row_count:
-                break
-            check_matrix[i] = vector[-i:] + vector[:-i]
-
-        return check_matrix
-
-    def gen_qc_cyclic_matrix(self):
-        h0 = gen_random_vector_with_fixed_weight(self.r, self.w // 2)
-        h1 = gen_random_vector_with_fixed_weight(self.r, self.w // 2)
-        H1 = self.gen_cyclic_matrix(h0)
-        H0 = self.gen_cyclic_matrix(h1)
-
-        return H0, H1, np.concatenate((H0, H1), axis=1)
-
-    def decode_by_gallager(self, word, b=3, max_it=7):
+    def decode_by_gallager(self, word, b=3, max_it=12):
         code = np.array(np.matmul(np.array(word), self.Q_matrix) % 2)
-        iter = 0
-        e = []
-        while iter < max_it:
-            max_upc = 0
-            counters_upc = [0 for i in range(len(word))]
-            syndrome = np.matmul(self.H_matrix, np.array(code).transpose()) % 2
+        while b >= 0:
+            iter = 0
+            while iter < max_it:
+                max_upc = 0
+                counters_upc = [0 for i in range(len(word))]
+                syndrome = np.matmul(self.H_matrix, np.array(code).transpose()) % 2
 
-            for i in range(0, self.r):
-                if syndrome[i] == 1:
-                    for j in range(self.n):
-                        if self.H_matrix[i][j] == 1:
-                            counters_upc[j] += 1
+                for i in range(0, self.r):
+                    if syndrome[i] == 1:
+                        for j in range(self.n):
+                            if self.H_matrix[i][j] == 1:
+                                counters_upc[j] += 1
 
-            for i in range(self.n):
-                if max_upc > counters_upc[i]:
-                    max_upc = counters_upc[i]
+                for i in range(self.n):
+                    if max_upc < counters_upc[i]:
+                        max_upc = counters_upc[i]
 
-            for i in range(self.n):
-                if counters_upc[i] > max_upc:
-                    code[i] ^= 1
+                for i in range(self.n):
+                    if counters_upc[i] >= max_upc - b:
+                        code[i] ^= 1
 
-            e.append(np.array(counters_upc) % 2)
-            temp_code = np.fmod(e[iter], code)
-            temp_s = np.matmul(self.H_matrix, np.array(temp_code).transpose()) % 2
-            s = np.matmul(self.H_matrix, np.array(code).transpose()) % 2
+                s = np.matmul(self.H_matrix, np.array(code).transpose()) % 2
 
-            unique, counts = np.unique(s, return_counts=True)
-            print(dict(zip(unique, counts)))
+                unique, counts = np.unique(s, return_counts=True)
+                print("b = {0}, iter = {1}: {2}".format(b, iter, dict(zip(unique, counts))))
 
-            if 1 not in s:
-                return code
-            else:
-                iter += 1
-                b -= 1
+                if 1 not in s:
+                    return code, True
+                else:
+                    iter += 1
+            b -= 1
 
         print("Decoding failure...")
-        return [0 for _ in range(len(word))]
+        return [0 for _ in range(len(word))], False
+
+
+def gen_qc_cyclic_matrix(r, w):
+    size = w // 2
+    h0 = gen_random_vector_with_fixed_weight(r, size)
+    h1 = gen_random_vector_with_fixed_weight(r, w - size)
+    H1 = gen_cyclic_matrix(h0)
+    H0 = gen_cyclic_matrix(h1)
+
+    return H0, H1, np.concatenate((H0, H1), axis=1)
+
+
+def gen_cyclic_matrix(vector, row_count=None):
+    block_size = len(vector)
+    if row_count is not None:
+        block_size = row_count
+    check_matrix = [[] for _ in range(block_size)]
+    for i, _ in enumerate(check_matrix):
+        if row_count is not None and i == row_count:
+            break
+        check_matrix[i] = vector[-i:] + vector[:-i]
+
+    return check_matrix
 
 
 def gen_random_vector_with_fixed_weight(size, weight):
@@ -151,16 +163,6 @@ def get_hamming_weight(num):
     for i in range(length):
         if num[i] & 1 == 1:
             weight += 1
-    return weight
-
-
-def gen_vector_with_weight(num):
-    length = len(bin(num)) - 2
-    weight = 0
-    for i in range(length):
-        if num & 1 == 1:
-            weight += 1
-        num >>= 1
     return weight
 
 

@@ -1,4 +1,10 @@
 {
   "cryptosystem_tests.py": true,
-  "cryptosystem_tests.py::QcldpcTests::test_decode": true
+  "cryptosystem_tests.py::QcldpcTests::test_decode": true,
+  "cryptosystem_tests.py::qc_ldpc_tests::test_decode": true,
+  "cryptosystem_tests.py::qc_ldpc_tests::test_gen_cyclic_matrix": true,
+  "cryptosystem_tests.py::qc_ldpc_tests::test_get_cyclic_matrix": true,
+  "reaction_attack_test.py": true,
+  "reaction_attack_test.py::reaction_attack_tests::test_attack": true,
+  "reaction_attack_test.py::reaction_attack_tests::test_random_vector_with_fixed_wight": true
 }
