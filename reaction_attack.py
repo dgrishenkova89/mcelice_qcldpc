@@ -29,6 +29,7 @@ class reaction_attack:
         self.n = self.r * self.n0
 
     def key_recovery(self, M):
+        h = []
         for i in range(M):
             size = self.r // 2
             w = choice(range(size // 2))
@@ -57,7 +58,8 @@ class reaction_attack:
             h1_rec = self.restore_message_by_spectrum(out_s0, out_s1, d0, d1, B, w)
 
             if h1_rec != -1:
-                return h1_rec
+                h.append(h1_rec)
+        return h
 
 
     def restore_message_by_spectrum(self, out_s0, out_s1, d0, d1, B, weight):
