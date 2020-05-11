@@ -16,9 +16,12 @@ class reaction_attack_tests(unittest.TestCase):
         source_message = cryptosystem.message
         source_private_key = cryptosystem.LDPC.H_matrix[0]
 
-        initialization = ra.reaction_attack(self.n0, self.r)
-
-        h1 = initialization.key_recovery(1000)
+        h = []
+        for i in range(1000):
+            initialization = ra.reaction_attack(self.n0, self.r, cryptosystem)
+            success, h1 = initialization.key_recovery(1000)
+            if success:
+                h.append(h1)
 
         assert len(h1) != 0
 

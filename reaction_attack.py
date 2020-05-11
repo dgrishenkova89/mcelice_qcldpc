@@ -1,10 +1,10 @@
 from __future__ import division, print_function
 
+import mcelice_qcldpc.McElieceSystem as mc
+
 from mcelice_qcldpc.qcldpc import gen_qc_cyclic_matrix, get_hamming_weight
 from random import choice, shuffle
 from collections import defaultdict
-
-import mcelice_qcldpc.McElieceSystem as mc
 
 def get_spectrum_dist(vector):
     r = len(vector)
@@ -23,43 +23,41 @@ def min_dist(pos1, pos2, length):
 
 
 class reaction_attack:
-    def __init__(self, n0, r):
+    def __init__(self, n0, r, mc_system):
         self.n0 = n0
         self.r = r
         self.n = self.r * self.n0
+        self.mc_system = mc_system
 
-    def key_recovery(self, M):
-        h = []
-        for i in range(M):
-            size = self.r // 2
-            w = choice(range(size // 2))
-            m = choice(range(50))
-            t = choice(range(size // 2))
-            p0, p1, B = self.spectrum_recovery(w, m, t)
+    def key_recovery(self):
+        size = self.r // 2
+        w = choice(range(size // 2))
+        m = choice(range(50))
+        t = choice(range(size // 2))
+        p0, p1, B = self.spectrum_recovery(w, m, t)
 
-            s0 = get_spectrum_dist(B[:, 0:self.r])
-            s1 = get_spectrum_dist(B[:, self.r:(self.r * 2)])
+        s0 = get_spectrum_dist(B[:, 0:self.r])
+        s1 = get_spectrum_dist(B[:, self.r:(self.r * 2)])
 
-            list_out_s0 = [i for i in range(1, self.r // 2 + 1) if i not in s0]
-            list_out_s1 = [i for i in range(1, self.r // 2 + 1) if i not in s1]
+        list_out_s0 = [i for i in range(1, self.r // 2 + 1) if i not in s0]
+        list_out_s1 = [i for i in range(1, self.r // 2 + 1) if i not in s1]
 
-            if len(list_out_s0) == 0 or list(list_out_s1) == 0:
-                continue
+        if len(list_out_s0) == 0 or list(list_out_s1) == 0:
+            return False, None
 
-            shuffle(list_out_s0)
-            shuffle(list_out_s1)
+        shuffle(list_out_s0)
+        shuffle(list_out_s1)
 
-            out_s0 = set(list_out_s0[:size])
-            out_s1 = set(list_out_s1[:size])
+        out_s0 = set(list_out_s0[:size])
+        out_s1 = set(list_out_s1[:size])
 
-            d0 = min(s0)
-            d1 = min(s1)
+        d0 = min(s0)
+        d1 = min(s1)
 
-            h1_rec = self.restore_message_by_spectrum(out_s0, out_s1, d0, d1, B, w)
+        h1_rec = self.restore_message_by_spectrum(out_s0, out_s1, d0, d1, B, w)
 
-            if h1_rec != -1:
-                h.append(h1_rec)
-        return h
+        if h1_rec != -1:
+            return True, h1_rec
 
 
     def restore_message_by_spectrum(self, out_s0, out_s1, d0, d1, B, weight):
@@ -83,7 +81,7 @@ class reaction_attack:
     def spectrum_recovery(self, w, m, t):
         crypto = mc.McElieceSystem(self.n0, self.r, w, m, t)
         cipher_text = crypto.encode()
-        message, success = crypto.decode(cipher_text)
+        message, success = self.mc_system.decode(cipher_text)
 
         s0 = get_spectrum_dist(crypto.error_vector[self.r:])
         s1 = get_spectrum_dist(crypto.error_vector[:self.r])
