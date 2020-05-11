@@ -4,6 +4,8 @@ from mcelice_qcldpc.qcldpc import gen_qc_cyclic_matrix, get_hamming_weight
 from random import choice, shuffle
 from collections import defaultdict
 
+import mcelice_qcldpc.McElieceSystem as mc
+
 def get_spectrum_dist(vector):
     r = len(vector)
     ones_pos = [i for i, v in enumerate(vector) if v == 1]
@@ -29,11 +31,13 @@ class reaction_attack:
     def key_recovery(self, M):
         for i in range(M):
             size = self.r // 2
-            w = choice(range(100))
-            H0, H1, B = gen_qc_cyclic_matrix(self.r, w)
+            w = choice(range(size // 2))
+            m = choice(range(50))
+            t = choice(range(size // 2))
+            p0, p1, B = self.spectrum_recovery(w, m, t)
 
-            s0 = get_spectrum_dist(H0[0])
-            s1 = get_spectrum_dist(H1[0])
+            s0 = get_spectrum_dist(B[:, 0:self.r])
+            s1 = get_spectrum_dist(B[:, self.r:(self.r * 2)])
 
             list_out_s0 = [i for i in range(1, self.r // 2 + 1) if i not in s0]
             list_out_s1 = [i for i in range(1, self.r // 2 + 1) if i not in s1]
@@ -73,3 +77,22 @@ class reaction_attack:
             if w <= weight:
                 return B_Z1[one_pos]
         return -1
+
+    def spectrum_recovery(self, w, m, t):
+        crypto = mc.McElieceSystem(self.n0, self.r, w, m, t)
+        cipher_text = crypto.encode()
+        message, success = crypto.decode(cipher_text)
+
+        s0 = get_spectrum_dist(crypto.error_vector[self.r:])
+        s1 = get_spectrum_dist(crypto.error_vector[:self.r])
+
+        a0 = [(i + int(success)) for i in range(self.r) if i in s0]
+        b0 = [i for i in range(self.r) if i in s0]
+
+        a1 = [(i + int(success)) for i in range(self.r) if i in s1]
+        b1 = [i for i in range(self.r) if i in s1]
+
+        p0 = [(a0[i] / b0[i]) for i in range(len(a0))]
+        p1 = [(a1[i] / b1[i]) for i in range(len(a1))]
+
+        return p0, p1, crypto.LDPC.H_matrix

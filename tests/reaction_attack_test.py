@@ -9,7 +9,7 @@ class reaction_attack_tests(unittest.TestCase):
     def test_attack(self):
         initialization = ra.reaction_attack(self.n0, self.r)
 
-        h1 = initialization.key_recovery(10)
+        h1 = initialization.key_recovery(100)
 
         assert len(h1) == self.r
 
