@@ -8,8 +8,8 @@ from mcelice_qcldpc.fileutils import write_matrix_in_files, write_list_in_file, 
 class qc_ldpc_tests(unittest.TestCase):
     n0 = 2
     r = 80
-    w = 12
-    m = 6
+    w = 4
+    m = 3
     t = 15
 
     def test_random_vector_with_fixed_wight(self):
@@ -49,8 +49,11 @@ class qc_ldpc_tests(unittest.TestCase):
 
         assert len(cryptosystem.LDPC.H_matrix) == self.r
         assert len(cryptosystem.LDPC.G_matrix) == self.r
-        assert len(cryptosystem.LDPC.G_matrix[0]) == (self.r * self.n0)
-        assert len(cryptosystem.LDPC.error) == (self.r * self.n0)
-        assert len(code) == (self.r * self.n0)
-        assert len(message) == len(cryptosystem.LDPC.message)
-        assert cryptosystem.message.all(message)
+
+        print(cryptosystem.message)
+        print(message)
+
+        matrix = QC_LDPC.gen_cyclic_matrix(message)
+
+        QC_LDPC.plot_parity_matrix(cryptosystem.LDPC.G_matrix)
+        QC_LDPC.plot_parity_matrix(cryptosystem.LDPC.H_matrix)

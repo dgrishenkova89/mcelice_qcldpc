@@ -41,24 +41,23 @@ class LDPC():
         print('ok')
 
     def get_generator_matrix(self):
-        while 1 == 1:
+        counter = 10
+        while counter > 0:
+            counter -= 1
             H0, H1, H_base = gen_qc_cyclic_matrix(self.r, self.w)
             try:
                 H1_inv = (np.linalg.inv(H1) % 2).astype(int)
                 H = (np.matmul(H1_inv, H0).transpose() % 2).astype(int)
                 I = gen_identity_matrix(self.r)
                 return H_base, np.concatenate((I, H), axis=1)
-            except:
-                print("Matrix H is singular")
+            except: print("Matrix H is singular")
 
     def gen_Q_matrix(self):
-        while 1 == 1:
+        counter = 10
+        while counter > 0:
+            counter -= 1
             vector_1 = list(np.random.permutation(gen_random_vector_with_fixed_weight(self.n, self.m)))
-#            perm_mat = np.zeros((self.n, self.n))
-#            for i in range(self.n):
-#                perm_mat[:, i] = np.random.permutation(vector_1)
             Q_matrix = gen_cyclic_matrix(vector_1)
-
             try:
                 Q_inv = (np.linalg.inv(Q_matrix) % 2).astype(int)
                 print("\nInverse Q")
@@ -67,11 +66,11 @@ class LDPC():
                 print("\nMatrix Q is singular")
 
     def gen_S_matrix(self):
-        while 1 == 1:
-            vector_1 = list(np.random.permutation(gen_random_vector_with_fixed_weight(self.r, 1)))
+        counter = 10
+        while counter > 0:
+            counter -= 1
             try:
-                #S_matrix = gen_scrambling_matrix(self.r)
-                S_matrix = gen_cyclic_matrix(vector_1)
+                S_matrix = gen_scrambling_matrix(self.r)
                 S_inv = np.linalg.inv(S_matrix).astype(int)
                 print("Inverse S")
 
@@ -80,7 +79,7 @@ class LDPC():
                 print("\nMatrix Q is singular")
 
     def decode_by_gallager(self, word, b=3, max_it=12):
-        code = np.array(np.matmul(np.array(word), self.Q_matrix) % 2)
+        code = np.array(np.matmul(word, self.Q_matrix) % 2)
         while b >= 0:
             iter = 0
             while iter < max_it:
@@ -119,10 +118,10 @@ class LDPC():
 
 def gen_qc_cyclic_matrix(r, w):
     size = w // 2
-    h0 = gen_random_vector_with_fixed_weight(r, size)
     h1 = gen_random_vector_with_fixed_weight(r, w - size)
-    H1 = gen_cyclic_matrix(h0)
-    H0 = gen_cyclic_matrix(h1)
+    h0 = gen_random_vector_with_fixed_weight(r, size)
+    H0 = gen_cyclic_matrix(h0)
+    H1 = gen_cyclic_matrix(h1)
 
     return H0, H1, np.concatenate((H0, H1), axis=1)
 

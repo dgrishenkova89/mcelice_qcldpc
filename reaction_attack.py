@@ -1,10 +1,70 @@
 from __future__ import division, print_function
 
+import pandas as pd
+import seaborn as sns
 import mcelice_qcldpc.McElieceSystem as mc
+import matplotlib.pyplot as plt
+import numpy as np
 
 from mcelice_qcldpc.qcldpc import gen_qc_cyclic_matrix, get_hamming_weight
 from random import choice, shuffle
 from collections import defaultdict
+
+
+def histplot(spec, probs):
+
+    df = pd.DataFrame()
+
+    sorted_ks = sorted(probs.keys(), key=lambda k: probs[k])
+    df['x'] = probs.keys()
+    df['y'] = sorted(probs.values())
+
+    df['in'] = [dist in spec for dist in sorted_ks]
+
+    def color(x):
+        if x:
+            return 'green'
+        return 'blue'
+
+    sns.barplot(data=df, x='x', y='y', palette=[color(v) for v in df['in']])
+
+def plot_disp(spec, probs):
+
+    df = pd.DataFrame()
+
+    df['x'] = sorted(probs.keys(), key=lambda x: probs[x])
+    df['y'] = sorted(probs.values())
+    ind = lambda x: 1 if x == True else 0
+    df['hue'] = [ind(k in spec) for k in probs]
+
+    sns.set_style("ticks")
+
+    sns.lmplot('x', 'y',
+               data=df,
+               fit_reg=False,
+               hue="hue",
+               scatter_kws={"marker": "D",
+                            "s": 50})
+
+
+def violinplot(spec, probs, figname='xxx_333.svg'):
+
+    inprobs = [probs[i] for i in spec]
+    outprobs = [probs[o] for o in probs if o not in spec]
+
+    palette = [sns.xkcd_rgb["grey"], sns.xkcd_rgb["medium green"],
+               sns.xkcd_rgb["pale red"]]
+    sns.boxplot(data=[list(probs.values()), inprobs, outprobs],
+                   palette=palette, linewidth=1)
+
+    plt.ylabel(r'Taxa de falha', fontsize=20)
+    plt.xlabel(r'', fontsize=20)
+    plt.ylim(0)
+    plt.axes().set_xticklabels([r'Todas', r"Muito em cumum", r"Pouco em comums \\ em comum"])
+    plt.savefig(figname, dpi=300, bbox_inches='tight')
+    plt.tight_layout()
+    plt.show()
+
 
 def get_spectrum_dist(vector):
     r = len(vector)
@@ -37,19 +97,19 @@ class reaction_attack:
         w = choice(range(size // 2))
         m = choice(range(50))
         t = choice(range(size // 2))
-        p0, p1, B, cipher_text = self.spectrum_recovery(w, m, t)
+        p0, p1, B, cipher_text, decode_success = self.spectrum_recovery(w, m, t)
 
         s0 = get_spectrum_dist(B[0][0:self.r])
         s1 = get_spectrum_dist(B[0][self.r:(self.r * 2)])
 
         if len(s0) == 0 or list(s1) == 0:
-            return False, None, cipher_text
+            return False, None, cipher_text, p0, p1, s0, s1, decode_success
 
         list_out_s0 = [i for i in range(1, self.r // 2 + 1) if i not in s0]
         list_out_s1 = [i for i in range(1, self.r // 2 + 1) if i not in s1]
 
         if len(list_out_s0) == 0 or list(list_out_s1) == 0:
-            return False, None, cipher_text
+            return False, None, cipher_text, p0, p1, s0, s1, decode_success
 
         shuffle(list_out_s0)
         shuffle(list_out_s1)
@@ -63,7 +123,7 @@ class reaction_attack:
         h1_rec = self.restore_message_by_spectrum(out_s0, out_s1, d0, d1, B, w)
 
         if h1_rec is not None:
-            return True, h1_rec, cipher_text
+            return True, h1_rec, cipher_text, p0, p1, np.array(s0), np.array(s1), decode_success
 
 
     def restore_message_by_spectrum(self, out_s0, out_s1, d0, d1, B, weight):
@@ -101,4 +161,21 @@ class reaction_attack:
         p0 = [(a0[i] / b0[i]) for i in range(len(a0))]
         p1 = [(a1[i] / b1[i]) for i in range(len(a1))]
 
-        return p0, p1, crypto.LDPC.H_matrix, cipher_text
+        return np.array(p0), np.array(p1), crypto.LDPC.H_matrix, cipher_text, success
+
+
+if __name__ == "__main__":
+    n, m, t, k = 64, 6, 4, 40
+    GF2 = sg.GF(2)
+
+    mceliece_system = McElieceSystem(k, m, t, scrambling=True)
+
+    alice = PublicKeyHolder(*mceliece_system.get_public_key())
+    bernie = PrivateKeyHolder(*mceliece_system.get_private_key())
+
+    message = sg.Matrix([GF2.random_element() for i in range(k)])
+    print('message\n', message.str())
+    ciphertext = alice.encrypt(message)
+    print('ciphertext\n', ciphertext.str())
+    plaintext = bernie.decrypt(ciphertext)
+    print('plaintext\n', plaintext.str())
